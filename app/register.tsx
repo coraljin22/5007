@@ -1,16 +1,15 @@
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
+  View
 } from "react-native";
-import { router } from "expo-router";
-import { registerUser, loginUser } from "../database/sqlite";
+import { registerUser } from "../database/sqlite";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -19,7 +18,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // 显示消息并在3秒后自动隐藏
+  // show toast message
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
@@ -66,7 +65,7 @@ export default function Register() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Toast 消息提示 */}
+      {/* Toast Message */}
       {message && (
         <View style={[styles.toast, message.type === 'success' ? styles.toastSuccess : styles.toastError]}>
           <Text style={styles.toastText}>{message.text}</Text>

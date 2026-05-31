@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native";
 import { router } from "expo-router";
+import React, { useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { loginUser } from "../database/sqlite";
 
 export default function Login() {
@@ -9,7 +9,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // 显示消息并在3秒后自动隐藏
+  // show toast message
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
@@ -30,7 +30,7 @@ export default function Login() {
       
       if (user) {
         showMessage("Login successful!", "success");
-        // 短暂延迟后跳转，让用户看到成功提示
+        // delay navigation to allow user to see the success message
         setTimeout(() => {
           router.replace({
             pathname: "/home",
@@ -50,7 +50,7 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
-      {/* Toast 消息提示 */}
+      {/* Toast Message */}
       {message && (
         <View style={[styles.toast, message.type === 'success' ? styles.toastSuccess : styles.toastError]}>
           <Text style={styles.toastText}>{message.text}</Text>

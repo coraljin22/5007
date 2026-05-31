@@ -1,17 +1,17 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { getCurrentUser } from "../database/sqlite";
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 检查是否有已登录的用户
+    // check if user is already logged in by querying the local SQLite database
     const checkLoginStatus = async () => {
       const currentUser = await getCurrentUser();
       if (currentUser) {
-        // 如果已登录，直接跳转到首页
+        // if user is logged in, navigate to home screen with user info
         router.replace({
           pathname: "/home",
           params: {
