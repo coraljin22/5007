@@ -1,31 +1,31 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import React from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ResetPage() {
   const resetData = async () => {
     try {
       await AsyncStorage.clear();
-      Alert.alert('成功', '数据库已清空！', [
+      Alert.alert('Completed', 'Database has been reset', [
         { text: 'OK', onPress: () => router.replace('/') }
       ]);
     } catch (error) {
-      Alert.alert('错误', '重置失败');
+      Alert.alert('Error', 'Reset failed');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>重置数据库</Text>
-      <Text style={styles.description}>点击按钮清除所有数据</Text>
+      <Text style={styles.title}>Reset Database</Text>
+      <Text style={styles.description}>Click the button to clear all data</Text>
       
       <TouchableOpacity style={styles.button} onPress={resetData}>
-        <Text style={styles.buttonText}>清空所有数据</Text>
+        <Text style={styles.buttonText}>Clear All Data</Text>
       </TouchableOpacity>
       
       <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.replace('/')}>
-        <Text style={styles.buttonText}>返回首页</Text>
+        <Text style={styles.buttonText}>Back to Home</Text>
       </TouchableOpacity>
     </View>
   );

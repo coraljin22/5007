@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as db from '../database/sqlite';
 
 export default function DebugPage() {
@@ -13,64 +13,64 @@ export default function DebugPage() {
   const clearLogs = () => setLogs([]);
 
   const testDatabase = async () => {
-    addLog('=== 开始测试数据库 ===');
+    addLog('=== Starting Database Test ===');
     
     try {
       // 测试注册
-      addLog('测试注册用户 test123...');
+      addLog('Testing user registration...');
       const userId = await db.registerUser('test123', 'password123');
-      addLog(`注册结果: userId = ${userId}`);
+      addLog(`Registration result: userId = ${userId}`);
       
       // 测试登录
-      addLog('测试登录...');
+      addLog('Testing login...');
       const user = await db.loginUser('test123', 'password123');
-      addLog(`登录结果: ${user ? `成功 - ${user.displayName}` : '失败'}`);
+      addLog(`Login result: ${user ? `Success - ${user.displayName}` : 'Failed'}`);
       
       if (user) {
         // 测试添加任务
-        addLog('测试添加任务...');
-        const taskId = await db.addTask(user.id, '测试任务', '2026-05-29');
-        addLog(`添加任务结果: taskId = ${taskId}`);
+        addLog('Testing task addition...');
+        const taskId = await db.addTask(user.id, 'Test Task', '2026-05-29');
+        addLog(`Task addition result: taskId = ${taskId}`);
         
         // 测试获取任务
-        addLog('测试获取任务...');
+        addLog('Testing task retrieval...');
         const tasks = await db.getTasks(user.id);
-        addLog(`获取任务结果: ${tasks.length} 个任务`);
+        addLog(`Task retrieval result: ${tasks.length} tasks`);
         
         // 测试添加好友
-        addLog('测试添加好友...');
+        addLog('Testing friend addition...');
         const friendId1 = await db.addFriend(user.id, 'Alice');
         const friendId2 = await db.addFriend(user.id, 'Bob');
-        addLog(`添加好友结果: friendIds = ${friendId1}, ${friendId2}`);
+        addLog(`Friend addition result: friendIds = ${friendId1}, ${friendId2}`);
         
         // 测试获取好友
-        addLog('测试获取好友...');
+        addLog('Testing friend retrieval...');
         const friends = await db.getFriends(user.id);
-        addLog(`获取好友结果: ${friends.length} 个好友`);
+        addLog(`Friend retrieval result: ${friends.length} friends`);
         friends.forEach(f => addLog(`- ${f.name} (ID: ${f.id})`));
         
         // 测试删除好友
-        addLog('测试删除好友...');
+        addLog('Testing friend deletion...');
         await db.deleteFriend(friendId1);
         const friendsAfterDelete = await db.getFriends(user.id);
-        addLog(`删除后好友数量: ${friendsAfterDelete.length}`);
+        addLog(`Friend deletion result: ${friendsAfterDelete.length} friends remaining`);
         
         // 测试获取当前用户
-        addLog('测试获取当前用户...');
+        addLog('Testing current user retrieval...');
         const currentUser = await db.getCurrentUser();
-        addLog(`当前用户: ${currentUser ? currentUser.displayName : '无'}`);
+        addLog(`Current user: ${currentUser ? currentUser.displayName : 'None'}`);
         
         // 测试退出登录
-        addLog('测试退出登录...');
+        addLog('Testing logout...');
         await db.logoutUser();
         const afterLogout = await db.getCurrentUser();
-        addLog(`退出后: ${afterLogout ? '还有用户' : '已退出'}`);
+        addLog(`After logout: ${afterLogout ? 'There is a user' : 'Logged out'}`);
       }
       
-      addLog('=== 测试完成 ===');
-      Alert.alert('完成', '数据库测试完成，请查看日志');
+      addLog('=== Test Completed ===');
+      Alert.alert('Completed', 'Database test completed, please check the logs');
     } catch (error) {
-      addLog(`错误: ${error}`);
+      addLog(`Error: ${error}`);
       console.error(error);
     }
   };
@@ -80,28 +80,28 @@ export default function DebugPage() {
       // 清空 AsyncStorage
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       await AsyncStorage.clear();
-      addLog('数据库已重置');
-      Alert.alert('完成', '数据库已重置');
+      addLog('Database has been reset');
+      Alert.alert('Completed', 'Database has been reset');
     } catch (error) {
-      addLog(`重置失败: ${error}`);
+      addLog(`Reset failed: ${error}`);
     }
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>数据库调试页面</Text>
+      <Text style={styles.title}>Database Debug Page</Text>
       
       <View style={styles.buttonRow}>
         <TouchableOpacity style={styles.button} onPress={testDatabase}>
-          <Text style={styles.buttonText}>运行测试</Text>
+          <Text style={styles.buttonText}>Run Test</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={[styles.button, styles.dangerButton]} onPress={resetDatabase}>
-          <Text style={styles.buttonText}>重置数据库</Text>
+          <Text style={styles.buttonText}>Reset Database</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.button} onPress={clearLogs}>
-          <Text style={styles.buttonText}>清除日志</Text>
+          <Text style={styles.buttonText}>Clear Logs</Text>
         </TouchableOpacity>
       </View>
       
@@ -110,7 +110,7 @@ export default function DebugPage() {
           <Text key={index} style={styles.logText}>{log}</Text>
         ))}
         {logs.length === 0 && (
-          <Text style={styles.emptyText}>点击"运行测试"开始</Text>
+          <Text style={styles.emptyText}>Click "Run Test" to start</Text>
         )}
       </View>
     </ScrollView>

@@ -1,55 +1,55 @@
 import {
   createTask,
-  validateTaskTitle,
   deleteTask,
   validateLogin,
+  validateTaskTitle,
 } from "../utils/taskUtils";
 
-describe("Task Utils - 单元测试", () => {
+describe("Task Utils - Unit Tests", () => {
   describe("validateTaskTitle", () => {
-    it("应该返回true当标题非空时", () => {
+    it("should return true when the title is not empty", () => {
       expect(validateTaskTitle("Buy groceries")).toBe(true);
     });
 
-    it("应该返回false当标题为空字符串时", () => {
+    it("should return false when the title is an empty string", () => {
       expect(validateTaskTitle("")).toBe(false);
     });
 
-    it("应该返回false当标题只有空格时", () => {
+    it("should return false when the title contains only whitespace", () => {
       expect(validateTaskTitle("   ")).toBe(false);
     });
   });
 
   describe("validateLogin", () => {
-    it("应该返回true当用户名和密码都非空时", () => {
+    it("should return true when the username and password are not empty", () => {
       expect(validateLogin("testuser", "password123")).toBe(true);
     });
 
-    it("应该返回false当用户名为空时", () => {
+    it("should return false when the username is empty", () => {
       expect(validateLogin("", "password123")).toBe(false);
     });
 
-    it("应该返回false当密码为空时", () => {
+    it("should return false when the password is empty", () => {
       expect(validateLogin("testuser", "")).toBe(false);
     });
   });
 
   describe("createTask", () => {
-    it("应该创建一个带有正确属性的任务", () => {
+    it("should create a task with the correct properties", () => {
       const task = createTask("Test Task", "2026-06-01");
       expect(task.title).toBe("Test Task");
       expect(task.date).toBe("2026-06-01");
       expect(task.id).toBeDefined();
     });
 
-    it("应该使用默认日期当没有提供日期时", () => {
+    it("should use the default date when no date is provided", () => {
       const task = createTask("Test Task", "");
       expect(task.date).toBe("No date selected");
     });
   });
 
   describe("deleteTask", () => {
-    it("应该从任务列表中删除指定id的任务", () => {
+    it("should remove the task with the specified id from the list", () => {
       const tasks = [
         { id: "1", title: "Task 1", date: "2026-06-01" },
         { id: "2", title: "Task 2", date: "2026-06-02" },
