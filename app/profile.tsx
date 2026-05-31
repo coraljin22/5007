@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,63 +7,153 @@ import {
   FlatList,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import {
+  getCurrentUser,
+  updateUserProfile,
+  logoutUser,
+  addFriend as addFriendToDB,
+  getFriends,
+  deleteFriend as deleteFriendFromDB,
+} from "../database/sqlite";
 
 type Friend = {
-  id: string;
+  id: number;
   name: string;
 };
 
 export default function Profile() {
-  const { username } = useLocalSearchParams();
+  const { username, userId } = useLocalSearchParams();
+  const uid = userId ? Number(userId) : 0;
 
   const [displayName, setDisplayName] = useState(String(username || "User"));
   const [country, setCountry] = useState("");
   const [gender, setGender] = useState("");
   const [bio, setBio] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const [friendName, setFriendName] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
 
-  const saveProfile = () => {
-    Alert.alert("Success", "Profile information saved");
+  // 显示消息并在3秒后自动隐藏
+  const showMessage = (text: string, type: 'success' | 'error') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 3000);
   };
 
-  const addFriend = () => {
-    if (!friendName.trim()) {
-      Alert.alert("Error", "Please enter a friend name");
+  useEffect(() => {
+    // 从数据库加载用户资料
+    const loadUserProfile = async () => {
+      const currentUser = await getCurrentUser();
+      if (currentUser && currentUser.id === uid) {
+        setDisplayName(currentUser.displayName);
+        setCountry(currentUser.country);
+        setGender(currentUser.gender);
+        setBio(currentUser.bio);
+      }
+    };
+    loadUserProfile().catch(console.error);
+  }, [uid]);
+
+  useEffect(() => {
+    // 从数据库加载好友
+    const loadFriends = async () => {
+      if (uid > 0) {
+        const dbFriends = await getFriends(uid);
+        setFriends(dbFriends);
+      }
+      setIsLoadingFriends(false);
+    };
+    loadFriends().catch(console.error);
+  }, [uid]);
+
+  const saveProfile = async () => {
+    if (uid <= 0) {
+      showMessage("Please login first", "error");
       return;
     }
 
-    const newFriend: Friend = {
-      id: Date.now().toString(),
-      name: friendName,
-    };
-
-    setFriends([...friends, newFriend]);
-    setFriendName("");
+    setIsSaving(true);
+    try {
+      await updateUserProfile(uid, displayName, country, gender, bio);
+      showMessage("Profile saved successfully!", "success");
+    } catch (error) {
+      console.error(error);
+      showMessage("Failed to save. Please try again", "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const deleteFriend = (id: string) => {
-    setFriends(friends.filter((friend) => friend.id !== id));
+  const addFriend = async () => {
+    if (!friendName.trim() || uid <= 0) {
+      showMessage("Please enter friend name", "error");
+      return;
+    }
+
+    try {
+      const friendId = await addFriendToDB(uid, friendName);
+      const newFriend: Friend = {
+        id: friendId,
+        name: friendName,
+      };
+      setFriends([...friends, newFriend]);
+      setFriendName("");
+      showMessage(`Friend added: ${friendName}`, "success");
+    } catch (error) {
+      console.error(error);
+      showMessage("Failed to add friend. Please try again", "error");
+    }
   };
 
-  const handleLogout = () => {
-    router.replace("/");
+  const deleteFriend = async (id: number, name: string) => {
+    try {
+      await deleteFriendFromDB(id);
+      setFriends(friends.filter((friend) => friend.id !== id));
+      showMessage(`Friend deleted: ${name}`, "success");
+    } catch (error) {
+      console.error(error);
+      showMessage("Failed to delete friend. Please try again", "error");
+    }
+  };
+
+  const handleLogout = async () => {
+    console.log('[Profile] 开始退出登录...');
+    setIsLoggingOut(true);
+    try {
+      await logoutUser();
+      console.log('[Profile] 退出成功，跳转到首页');
+      router.replace("/");
+    } catch (error) {
+      console.error('[Profile] 退出失败:', error);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      {/* Toast 消息提示 */}
+      {message && (
+        <View style={[styles.toast, message.type === 'success' ? styles.toastSuccess : styles.toastError]}>
+          <Text style={styles.toastText}>{message.text}</Text>
+        </View>
+      )}
+      
       <Text style={styles.title}>Profile</Text>
 
       <Text style={styles.sectionTitle}>User Information</Text>
 
       <TextInput
-        placeholder="Username"
+        placeholder="Display Name"
         value={displayName}
         onChangeText={setDisplayName}
         style={styles.input}
+        editable={!isSaving && !isLoggingOut}
       />
 
       <TextInput
@@ -71,6 +161,7 @@ export default function Profile() {
         value={country}
         onChangeText={setCountry}
         style={styles.input}
+        editable={!isSaving && !isLoggingOut}
       />
 
       <TextInput
@@ -78,6 +169,7 @@ export default function Profile() {
         value={gender}
         onChangeText={setGender}
         style={styles.input}
+        editable={!isSaving && !isLoggingOut}
       />
 
       <TextInput
@@ -86,10 +178,19 @@ export default function Profile() {
         onChangeText={setBio}
         style={styles.bioInput}
         multiline
+        editable={!isSaving && !isLoggingOut}
       />
 
-      <TouchableOpacity onPress={saveProfile} style={styles.saveButton}>
-        <Text style={styles.buttonText}>Save Profile</Text>
+      <TouchableOpacity 
+        onPress={saveProfile} 
+        style={[styles.saveButton, { opacity: isSaving || isLoggingOut ? 0.6 : 1 }]}
+        disabled={isSaving || isLoggingOut}
+      >
+        {isSaving ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Save Profile</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Friends</Text>
@@ -99,35 +200,65 @@ export default function Profile() {
         value={friendName}
         onChangeText={setFriendName}
         style={styles.input}
+        editable={!isSaving && !isLoggingOut}
       />
 
-      <TouchableOpacity onPress={addFriend} style={styles.friendButton}>
+      <TouchableOpacity 
+        onPress={addFriend} 
+        style={[styles.friendButton, { opacity: isSaving || isLoggingOut ? 0.6 : 1 }]}
+        disabled={isSaving || isLoggingOut}
+      >
         <Text style={styles.buttonText}>Add Friend</Text>
       </TouchableOpacity>
 
-      <FlatList
-        data={friends}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.friendCard}>
-            <Text style={styles.friendName}>{item.name}</Text>
+      {isLoadingFriends ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Loading friends...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={friends}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.friendCard}>
+              <Text style={styles.friendName}>{item.name}</Text>
 
-            <TouchableOpacity
-              onPress={() => deleteFriend(item.id)}
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteText}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+              <TouchableOpacity
+                onPress={() => deleteFriend(item.id, item.name)}
+                style={styles.deleteButton}
+                disabled={isSaving || isLoggingOut}
+              >
+                <Text style={styles.deleteText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
 
-      <TouchableOpacity onPress={() => router.push("/home")} style={styles.backButton}>
+      <TouchableOpacity 
+        onPress={() =>
+          router.push({
+            pathname: "/home",
+            params: { username: displayName, userId: uid },
+          })
+        } 
+        style={styles.backButton}
+        disabled={isSaving || isLoggingOut}
+      >
         <Text style={styles.backText}>Back to Home</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Text style={styles.buttonText}>Logout</Text>
+      <TouchableOpacity 
+        onPress={handleLogout} 
+        style={[styles.logoutButton, { opacity: isLoggingOut || isSaving ? 0.6 : 1 }]}
+        disabled={isSaving || isLoggingOut}
+      >
+        {isLoggingOut ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Logout</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -139,6 +270,44 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#fff",
     marginTop: 50,
+  },
+
+  loadingContainer: {
+    padding: 20,
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
+
+  toast: {
+    position: "absolute",
+    top: 60,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    zIndex: 1000,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastSuccess: {
+    backgroundColor: "#10B981",
+  },
+  toastError: {
+    backgroundColor: "#EF4444",
+  },
+  toastText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
+    textAlign: "center",
   },
 
   title: {

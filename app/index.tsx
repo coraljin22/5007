@@ -1,7 +1,45 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "../database/sqlite";
 
 export default function Index() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // 检查是否有已登录的用户
+    const checkLoginStatus = async () => {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        // 如果已登录，直接跳转到首页
+        router.replace({
+          pathname: "/home",
+          params: {
+            username: currentUser.displayName,
+            userId: currentUser.id,
+          },
+        });
+      }
+      setIsLoading(false);
+    };
+
+    checkLoginStatus().catch(console.error);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#4A90E2" />
+      </View>
+    );
+  }
+
   return (
     <View
       style={{

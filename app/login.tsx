@@ -1,26 +1,63 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from "react-native";
 import { router } from "expo-router";
+import { loginUser } from "../database/sqlite";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  const handleLogin = () => {
+  // 显示消息并在3秒后自动隐藏
+  const showMessage = (text: string, type: 'success' | 'error') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const handleLogin = async () => {
+    console.log('[Login] Starting login...');
+    
     if (!username.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter username and password");
+      showMessage("Please enter username and password", "error");
       return;
     }
 
-    router.push({
-      pathname: "/home",
-      params: { username: username },
-    });
+    setIsLoading(true);
+    try {
+      const user = await loginUser(username.trim(), password.trim());
+      console.log('[Login] Login result:', user);
+      
+      if (user) {
+        showMessage("Login successful!", "success");
+        // 短暂延迟后跳转，让用户看到成功提示
+        setTimeout(() => {
+          router.replace({
+            pathname: "/home",
+            params: { username: user.displayName, userId: user.id },
+          });
+        }, 800);
+      } else {
+        showMessage("Invalid username or password. Please check or register first", "error");
+      }
+    } catch (error) {
+      console.error('[Login] Error:', error);
+      showMessage("Error occurred during login. Please try again", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 20 }}>
-      <Text style={{ fontSize: 32, fontWeight: "bold", marginBottom: 30 }}>
+    <View style={styles.container}>
+      {/* Toast 消息提示 */}
+      {message && (
+        <View style={[styles.toast, message.type === 'success' ? styles.toastSuccess : styles.toastError]}>
+          <Text style={styles.toastText}>{message.text}</Text>
+        </View>
+      )}
+      
+      <Text style={styles.title}>
         Login
       </Text>
 
@@ -28,7 +65,8 @@ export default function Login() {
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
-        style={{ borderWidth: 1, padding: 12, marginBottom: 15, borderRadius: 8 }}
+        style={styles.input}
+        editable={!isLoading}
       />
 
       <TextInput
@@ -36,23 +74,105 @@ export default function Login() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{ borderWidth: 1, padding: 12, marginBottom: 20, borderRadius: 8 }}
+        style={styles.input}
+        editable={!isLoading}
       />
 
       <TouchableOpacity
         onPress={handleLogin}
-        style={{ backgroundColor: "#4A90E2", padding: 15, borderRadius: 10 }}
+        style={[styles.button, { opacity: isLoading ? 0.6 : 1 }]}
+        disabled={isLoading}
       >
-        <Text style={{ color: "white", textAlign: "center", fontSize: 18 }}>
-          Login
-        </Text>
+        {isLoading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>
+            Login
+          </Text>
+        )}
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/register")} style={{ marginTop: 20 }}>
-        <Text style={{ color: "#4A90E2", textAlign: "center" }}>
+      <TouchableOpacity onPress={() => router.push("/Register")} style={styles.registerLink} disabled={isLoading}>
+        <Text style={styles.registerText}>
           Create New Account
         </Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+
+  toast: {
+    position: "absolute",
+    top: 60,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    zIndex: 1000,
+    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastSuccess: {
+    backgroundColor: "#10B981",
+  },
+  toastError: {
+    backgroundColor: "#EF4444",
+  },
+  toastText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 15,
+    textAlign: "center",
+  },
+
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+
+  input: {
+    borderWidth: 1,
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+    fontSize: 16,
+    borderColor: '#ccc',
+  },
+
+  button: {
+    backgroundColor: "#4A90E2",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  registerLink: {
+    marginTop: 20,
+  },
+
+  registerText: {
+    color: "#4A90E2",
+    textAlign: "center",
+    fontSize: 16,
+  },
+});

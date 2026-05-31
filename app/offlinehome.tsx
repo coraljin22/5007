@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-
 import {
   View,
   Text,
@@ -9,6 +8,8 @@ import {
   StyleSheet,
 } from "react-native";
 
+import { Calendar } from "react-native-calendars";
+
 type Task = {
   id: string;
   title: string;
@@ -17,8 +18,8 @@ type Task = {
 
 export default function OfflineHome() {
   const [task, setTask] = useState("");
-  const [date, setDate] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedDate, setSelectedDate] = useState("");
 
   const addTask = () => {
     if (!task.trim()) return;
@@ -26,12 +27,11 @@ export default function OfflineHome() {
     const newTask: Task = {
       id: Date.now().toString(),
       title: task,
-      date: date,
+      date: selectedDate || "No date selected",
     };
 
     setTasks([...tasks, newTask]);
     setTask("");
-    setDate("");
   };
 
   const deleteTask = (id: string) => {
@@ -49,12 +49,24 @@ export default function OfflineHome() {
         style={styles.input}
       />
 
-      <TextInput
-        placeholder="Enter Date / Time"
-        value={date}
-        onChangeText={setDate}
-        style={styles.input}
+      <Text style={styles.label}>Select Date</Text>
+
+      <Calendar
+        onDayPress={(day) => {
+          setSelectedDate(day.dateString);
+        }}
+        markedDates={{
+          [selectedDate]: {
+            selected: true,
+            selectedColor: "#4A90E2",
+          },
+        }}
+        style={styles.calendar}
       />
+
+      <Text style={styles.selectedText}>
+        Selected Date: {selectedDate || "None"}
+      </Text>
 
       <TouchableOpacity style={styles.button} onPress={addTask}>
         <Text style={styles.buttonText}>Add Offline Task</Text>
@@ -67,7 +79,7 @@ export default function OfflineHome() {
           <View style={styles.taskCard}>
             <View>
               <Text style={styles.taskTitle}>{item.title}</Text>
-              <Text style={styles.taskDate}>{item.date || "No Date"}</Text>
+              <Text style={styles.taskDate}>{item.date}</Text>
             </View>
 
             <TouchableOpacity
@@ -94,7 +106,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: "bold",
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   input: {
@@ -104,6 +116,22 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
+  },
+
+  label: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
+  calendar: {
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+
+  selectedText: {
+    fontSize: 16,
+    marginBottom: 15,
   },
 
   button: {
