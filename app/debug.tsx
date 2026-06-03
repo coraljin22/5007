@@ -16,51 +16,51 @@ export default function DebugPage() {
     addLog('=== Starting Database Test ===');
     
     try {
-      // 测试注册
+      // test registration
       addLog('Testing user registration...');
       const userId = await db.registerUser('test123', 'password123');
       addLog(`Registration result: userId = ${userId}`);
       
-      // 测试登录
+      // test login
       addLog('Testing login...');
       const user = await db.loginUser('test123', 'password123');
       addLog(`Login result: ${user ? `Success - ${user.displayName}` : 'Failed'}`);
       
       if (user) {
-        // 测试添加任务
+        // test adding task
         addLog('Testing task addition...');
         const taskId = await db.addTask(user.id, 'Test Task', '2026-05-29');
         addLog(`Task addition result: taskId = ${taskId}`);
         
-        // 测试获取任务
+        // test retrieving tasks
         addLog('Testing task retrieval...');
         const tasks = await db.getTasks(user.id);
         addLog(`Task retrieval result: ${tasks.length} tasks`);
         
-        // 测试添加好友
+        // test adding friend
         addLog('Testing friend addition...');
         const friendId1 = await db.addFriend(user.id, 'Alice');
         const friendId2 = await db.addFriend(user.id, 'Bob');
         addLog(`Friend addition result: friendIds = ${friendId1}, ${friendId2}`);
         
-        // 测试获取好友
+        // test retrieving friends
         addLog('Testing friend retrieval...');
         const friends = await db.getFriends(user.id);
         addLog(`Friend retrieval result: ${friends.length} friends`);
         friends.forEach(f => addLog(`- ${f.name} (ID: ${f.id})`));
         
-        // 测试删除好友
+        // test deleting friend
         addLog('Testing friend deletion...');
         await db.deleteFriend(friendId1);
         const friendsAfterDelete = await db.getFriends(user.id);
         addLog(`Friend deletion result: ${friendsAfterDelete.length} friends remaining`);
         
-        // 测试获取当前用户
+        // test retrieving current user
         addLog('Testing current user retrieval...');
         const currentUser = await db.getCurrentUser();
         addLog(`Current user: ${currentUser ? currentUser.displayName : 'None'}`);
         
-        // 测试退出登录
+        // test logout
         addLog('Testing logout...');
         await db.logoutUser();
         const afterLogout = await db.getCurrentUser();
@@ -77,7 +77,7 @@ export default function DebugPage() {
 
   const resetDatabase = async () => {
     try {
-      // 清空 AsyncStorage
+      // clear AsyncStorage
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       await AsyncStorage.clear();
       addLog('Database has been reset');
