@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
+  View
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
 import {
-  getCurrentUser,
-  updateUserProfile,
-  logoutUser,
   addFriend as addFriendToDB,
-  getFriends,
   deleteFriend as deleteFriendFromDB,
+  getCurrentUser,
+  getFriends,
+  logoutUser,
+  updateUserProfile,
 } from "../database/sqlite";
 
 type Friend = {
@@ -40,14 +39,14 @@ export default function Profile() {
   const [friendName, setFriendName] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
 
-  // 显示消息并在3秒后自动隐藏
+  // message toast
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
   };
 
   useEffect(() => {
-    // 从数据库加载用户资料
+    // database load user profile
     const loadUserProfile = async () => {
       const currentUser = await getCurrentUser();
       if (currentUser && currentUser.id === uid) {
@@ -61,7 +60,7 @@ export default function Profile() {
   }, [uid]);
 
   useEffect(() => {
-    // 从数据库加载好友
+    // database load friends
     const loadFriends = async () => {
       if (uid > 0) {
         const dbFriends = await getFriends(uid);
@@ -123,21 +122,21 @@ export default function Profile() {
   };
 
   const handleLogout = async () => {
-    console.log('[Profile] 开始退出登录...');
+    console.log('[Profile] logging out...');
     setIsLoggingOut(true);
     try {
       await logoutUser();
-      console.log('[Profile] 退出成功，跳转到首页');
+      console.log('[Profile] logout successful, redirecting to home');
       router.replace("/");
     } catch (error) {
-      console.error('[Profile] 退出失败:', error);
+      console.error('[Profile] logout failed:', error);
       setIsLoggingOut(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Toast 消息提示 */}
+      {/* Toast message */}
       {message && (
         <View style={[styles.toast, message.type === 'success' ? styles.toastSuccess : styles.toastError]}>
           <Text style={styles.toastText}>{message.text}</Text>
